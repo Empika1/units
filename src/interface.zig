@@ -1,11 +1,12 @@
 const std = @import("std");
+const result = @import("result.zig");
 
 const SatisfiesInterface = union(enum) {
     Satisfies: void,
     Fails: []const u8,
 };
 
-pub fn satisfiesInterface(comptime interface: type, comptime child: type) SatisfiesInterface {
+pub fn satisfiesInterface(comptime interface: type, comptime child: type) result.Result {
     comptime {
         const iInfo = @typeInfo(interface);
         switch (iInfo) {
@@ -27,10 +28,10 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
             for (cStruct.fields) |cField| {
                 if (std.mem.eql(u8, iField.name, cField.name)) {
                     if (iField.type != cField.type) {
-                        return .{ .Fails = std.fmt.comptimePrint("child has no field that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iField.name, iField.type, cField.type }) };
+                        return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iField.name, iField.type, cField.type }) };
                     }
                     if (iField.is_comptime != cField.is_comptime) {
-                        return .{ .Fails = std.fmt.comptimePrint("child has no field that matches {s} in interface. comptime-ness mismatch ({s} in interface vs {s} in child)", .{
+                        return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface. comptime-ness mismatch ({s} in interface vs {s} in child)", .{
                             iField.name,
                             (if (iField.is_comptime)
                                 "comptime"
@@ -47,7 +48,7 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
                 }
             }
             if (!childHasField) {
-                return .{ .Fails = std.fmt.comptimePrint("child has no field that matches {s} in interface", .{iField.name}) };
+                return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface", .{iField.name}) };
             }
         }
 
@@ -62,10 +63,10 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
 
                 if (std.mem.eql(u8, iDecl.name, cDecl.name)) {
                     if (iDeclType != cDeclType) {
-                        return .{ .Fails = std.fmt.comptimePrint("child has no decl that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iDecl.name, iDeclType, cDeclType }) };
+                        return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iDecl.name, iDeclType, cDeclType }) };
                     }
                     if (iDeclIsConst != cDeclIsConst) {
-                        return .{ .Fails = std.fmt.comptimePrint("child has no decl that matches {s} in interface. constness mismatch ({s} in interface vs {s} in child)", .{
+                        return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface. constness mismatch ({s} in interface vs {s} in child)", .{
                             iDecl.name,
                             (if (iDeclIsConst)
                                 "const"
@@ -83,10 +84,19 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
             }
 
             if (!childHasDecl) {
-                return .{ .Fails = std.fmt.comptimePrint("child has no decl that matches {s} in interface", .{iDecl.name}) };
+                return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface", .{iDecl.name}) };
             }
         }
 
-        return .{ .Satisfies = {} };
+        return .{ .Yes = {} };
+    }
+}
+
+pub fn assertInterface(comptime interface: type, comptime child: type) void {
+    comptime {
+        const res = satisfiesInterface(interface, child);
+        switch (res) {
+            .No => @compileError(res.No),
+        }
     }
 }
