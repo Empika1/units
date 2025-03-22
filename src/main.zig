@@ -1,6 +1,9 @@
 const std = @import("std");
 const interface = @import("interface.zig");
 
+const UnitlessQuantity = struct {};
+const UnitlessNumber = struct { number: f64 };
+
 const BaseQuantity = struct {
     pub const unit: type = undefined;
 };
@@ -88,6 +91,9 @@ fn getBaseQuantities(comptime bases: []const TypeValuePair) []const TypeValuePai
         if (i > 0 and basesSorted[i].t == basesSorted[i - 1].t) {
             basesNoRepeats[j - 1].v += basesSorted[i].v;
         } else {
+            if (j > 0 and basesNoRepeats[j - 1].v == 0) {
+                j -= 1;
+            }
             basesNoRepeats[j] = basesSorted[i];
             j += 1;
         }
@@ -100,6 +106,15 @@ fn getBaseQuantities(comptime bases: []const TypeValuePair) []const TypeValuePai
 fn MakeCompositeQuantity(comptime bases_: []const TypeValuePair) type {
     comptime {
         const basesAsBaseQuantities = getBaseQuantities(bases_);
+
+        if (basesAsBaseQuantities.len == 0) {
+            return UnitlessQuantity;
+        }
+
+        if (basesAsBaseQuantities.len == 1) {
+            return basesAsBaseQuantities[0].t;
+        }
+
         return struct {
             const Quantity = struct {
                 pub const bases = basesAsBaseQuantities;
@@ -121,22 +136,24 @@ const DerivedUnit = struct {
 };
 
 fn MakeDerivedUnit(comptime quantity_: type, comptime scaleFactor_: f64, comptime affineShift_: f64) type {
-    if (scaleFactor_ == 0) {
-        @compileError("scale factor cannot be 0");
+    comptime {
+        if (scaleFactor_ == 0) {
+            @compileError("scale factor cannot be 0");
+        }
+
+        return struct {
+            pub const quantity: type = quantity_;
+            pub const scaleFactor: f64 = scaleFactor_;
+            pub const affineShift: f64 = affineShift_;
+
+            number: f64,
+        };
     }
-
-    return struct {
-        pub const quantity: type = quantity_;
-        pub const scaleFactor: f64 = scaleFactor_;
-        pub const affineShift: f64 = affineShift_;
-
-        number: f64,
-    };
 }
 
 const Velocity: type = MakeCompositeQuantity(&.{ .{ .t = Length, .v = 1 }, .{ .t = Time, .v = -1 } });
 const Velocity2: type = MakeCompositeQuantity(&.{ .{ .t = Time, .v = -1 }, .{ .t = Length, .v = 1 } });
-const Velocity3: type = MakeCompositeQuantity(&.{ .{ .t = Velocity2, .v = 2 }, .{ .t = Velocity2, .v = -1 } });
+const Length2: type = MakeCompositeQuantity(&.{ .{ .t = Velocity, .v = 1 }, .{ .t = Time, .v = 1 } });
 
 // const A = struct {
 //     pub var a: i8 = 0;
@@ -155,5 +172,5 @@ const Velocity3: type = MakeCompositeQuantity(&.{ .{ .t = Velocity2, .v = 2 }, .
 // };
 
 pub fn main() void {
-    @compileLog(Velocity == Velocity3);
+    @compileLog(Length == Length2);
 }
