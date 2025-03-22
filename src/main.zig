@@ -56,61 +56,45 @@ const CompositeQuantity = struct {
 };
 
 fn getBaseQuantities(comptime bases: []const TypeValuePair) []const TypeValuePair {
-    comptime {
-        var basesReduced: []const TypeValuePair = &.{};
-        for (0..bases.len) |i| {
-            switch (interface.satisfiesInterface(CompositeQuantity, bases[i].t)) {
-                .Satisfies => {
-                    for (getBaseQuantities(bases[i].t.bases)) |baseToAdd| {
-                        basesReduced = basesReduced ++ [_]TypeValuePair{.{ .t = baseToAdd.t, .v = baseToAdd.v * bases[i].v }};
-                    }
-                    continue;
-                },
-                .Fails => {},
-            }
-            switch (interface.satisfiesInterface(BaseQuantity, bases[i].t)) {
-                .Satisfies => {
-                    basesReduced = basesReduced ++ [_]TypeValuePair{bases[i]};
-                },
-                .Fails => {
-                    @compileError(std.fmt.comptimePrint("{} is not a base or composite quality.", .{bases[i].t}));
-                },
-            }
+    var basesReduced: []const TypeValuePair = &.{};
+    for (0..bases.len) |i| {
+        switch (interface.satisfiesInterface(CompositeQuantity, bases[i].t)) {
+            .Satisfies => {
+                for (getBaseQuantities(bases[i].t.bases)) |baseToAdd| {
+                    basesReduced = basesReduced ++ [_]TypeValuePair{.{ .t = baseToAdd.t, .v = baseToAdd.v * bases[i].v }};
+                }
+                continue;
+            },
+            .Fails => {},
         }
-
-        const sortFunc: fn (void, TypeValuePair, TypeValuePair) bool = struct {
-            pub fn inner(_: void, a: TypeValuePair, b: TypeValuePair) bool {
-                return std.mem.order(u8, @typeName(a.t), @typeName(b.t)) == std.math.Order.gt;
-            }
-        }.inner;
-
-        //I can't sort basesReduced, because it's const, so I make a copy.
-        //However, if I make it not const, then the array concatenation above fails with "error: expected type '[]main.TypeValuePair', found '*const [1]main.TypeValuePair'"
-        var basesSorted: [basesReduced.len]TypeValuePair = undefined;
-        @memcpy(&basesSorted, basesReduced);
-        std.mem.sort(TypeValuePair, &basesSorted, {}, sortFunc);
-
-        //I can't remove duplicate elements from basesSorted directly, because i can't seem to perform array concatenation on a non-const slice (same error as above)
-        //I also can't make this a const slice, because then I can't assign to its elements
-        var basesNoRepeats: [basesReduced.len]TypeValuePair = .{TypeValuePair{ .t = undefined, .v = 0 }} ** basesReduced.len;
-        var j = 0;
-        for (0..basesSorted.len) |i| {
-            if (i > 0 and basesSorted[i].t == basesSorted[i - 1].t) {
-                basesNoRepeats[j - 1].v += basesSorted[i].v;
-            } else {
-                basesNoRepeats[j] = basesSorted[i];
-                j += 1;
-            }
+        switch (interface.satisfiesInterface(BaseQuantity, bases[i].t)) {
+            .Satisfies => basesReduced = basesReduced ++ [_]TypeValuePair{bases[i]},
+            .Fails => @compileError(std.fmt.comptimePrint("{} is not a base or composite quality.", .{bases[i].t})),
         }
-
-        //I can't directly slice basesNoRepeats and return it, because then I get "error: type capture contains reference to comptime var" later when I use the return value in a struct definition
-        var basesConstSlice: []const TypeValuePair = &.{};
-        for (0..j) |i| {
-            basesConstSlice = basesConstSlice ++ [_]TypeValuePair{basesNoRepeats[i]};
-        }
-
-        return basesConstSlice;
     }
+
+    const sortFunc: fn (void, TypeValuePair, TypeValuePair) bool = struct {
+        pub fn inner(_: void, a: TypeValuePair, b: TypeValuePair) bool {
+            return std.mem.order(u8, @typeName(a.t), @typeName(b.t)) == std.math.Order.gt;
+        }
+    }.inner;
+
+    var basesSorted: [basesReduced.len]TypeValuePair = basesReduced[0..].*;
+    std.mem.sort(TypeValuePair, &basesSorted, {}, sortFunc);
+
+    var basesNoRepeats = [_]TypeValuePair{TypeValuePair{ .t = undefined, .v = 0 }} ** basesReduced.len;
+    var j = 0;
+    for (0..basesSorted.len) |i| {
+        if (i > 0 and basesSorted[i].t == basesSorted[i - 1].t) {
+            basesNoRepeats[j - 1].v += basesSorted[i].v;
+        } else {
+            basesNoRepeats[j] = basesSorted[i];
+            j += 1;
+        }
+    }
+
+    const basesConstSlice = basesNoRepeats[0..j].*;
+    return &basesConstSlice;
 }
 
 fn MakeCompositeQuantity(comptime bases_: []const TypeValuePair) type {

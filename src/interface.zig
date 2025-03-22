@@ -9,18 +9,18 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
     comptime {
         const iInfo = @typeInfo(interface);
         switch (iInfo) {
-            .Struct => {},
+            .@"struct" => {},
             else => return .{ .Fails = std.fmt.comptimePrint("interface is not a struct type (is a {}).", .{std.meta.activeTag(iInfo)}) },
         }
 
         const cInfo = @typeInfo(child);
         switch (cInfo) {
-            .Struct => {},
+            .@"struct" => {},
             else => return .{ .Fails = std.fmt.comptimePrint("child is not a struct type (is a {}).", .{std.meta.activeTag(cInfo)}) },
         }
 
-        const iStruct = iInfo.Struct;
-        const cStruct = cInfo.Struct;
+        const iStruct = iInfo.@"struct";
+        const cStruct = cInfo.@"struct";
 
         for (iStruct.fields) |iField| {
             var childHasField: bool = false;
@@ -53,12 +53,12 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) Satisf
 
         for (iStruct.decls) |iDecl| {
             const iDeclType = @TypeOf(@field(interface, iDecl.name));
-            const iDeclIsConst = @typeInfo(@TypeOf(&@field(interface, iDecl.name))).Pointer.is_const;
+            const iDeclIsConst = @typeInfo(@TypeOf(&@field(interface, iDecl.name))).pointer.is_const;
 
             var childHasDecl: bool = false;
             for (cStruct.decls) |cDecl| {
                 const cDeclType = @TypeOf(@field(child, cDecl.name));
-                const cDeclIsConst = @typeInfo(@TypeOf(&@field(child, cDecl.name))).Pointer.is_const;
+                const cDeclIsConst = @typeInfo(@TypeOf(&@field(child, cDecl.name))).pointer.is_const;
 
                 if (std.mem.eql(u8, iDecl.name, cDecl.name)) {
                     if (iDeclType != cDeclType) {
