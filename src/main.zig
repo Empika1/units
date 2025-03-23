@@ -5,6 +5,13 @@ const result = @import("result.zig");
 const UnitlessQuantity = struct {};
 const UnitlessNumber = f64;
 
+fn satisfiesUnitlessQuantity(T: type) result.Result {
+    switch (@typeInfo(T)) {
+        .Float => return .{ .Yes = {} },
+        _ => return .{ .No = "T cannot be converted to a UnitlessNumber" },
+    }
+}
+
 fn satisfiesBaseQuantity(T: type) result.Result {
     comptime {
         const BaseQuantity = struct {
@@ -121,12 +128,12 @@ fn assertUnitQuantity(T: type) void {
 
 fn satisfiesQuantity(T: type) result.Result {
     comptime {
-        if (T == UnitlessQuantity) {
-            return .{ .Yes = {} };
-        }
-        switch (satisfiesUnitQuantity(T)) {
+        switch (satisfiesUnitlessQuantity(T)) {
             .Yes => return .{ .Yes = {} },
-            .No => return .{ .No = "T is not UnitlessQuantity and satisfies neither unit nor base quantity" },
+            .No => switch (satisfiesUnitQuantity(T)) {
+                .Yes => return .{ .Yes = {} },
+                .No => return .{ .No = "T is not UnitlessQuantity and satisfies neither unit nor base quantity" },
+            },
         }
     }
 }
@@ -261,8 +268,9 @@ fn getBaseQuantities(comptime bases: []const TypeValuePair) []const TypeValuePai
         var j = 0;
         var i = 0;
         while (i < basesSorted.len) : (i += 1) {
-            if (basesSorted[i].t == UnitlessQuantity) {
-                i += 1;
+            switch (satisfiesUnitlessQuantity(basesSorted[i].t)) {
+                .Yes => i += 1,
+                .No => {},
             }
             if (i > 0 and basesSorted[i].t == basesSorted[i - 1].t) {
                 basesNoRepeats[j - 1].v += basesSorted[i].v;
@@ -322,6 +330,16 @@ fn MakeDerivedUnit(comptime quantity_: type, comptime scaleFactor_: comptime_flo
 
             number: UnitlessNumber,
         };
+    }
+}
+
+fn GetQuantity(comptime T: type) type {
+    comptime {
+        if (T == UnitlessNumber) {
+            return UnitlessQuantity;
+        }
+        assertUnit(T);
+        return T.quantity;
     }
 }
 
@@ -417,7 +435,7 @@ fn subtract(a: anytype, b: anytype) GetBaseUnitType(@TypeOf(a)) {
     return .{ .number = convertToBaseUnit(a).number - convertToBaseUnit(b).number };
 }
 
-fn multiply(a: anytype, b: anytype) QuantityMultiply(@TypeOf(a).quantity, @TypeOf(b).quantity).unit {
+fn multiply(a: anytype, b: anytype) QuantityMultiply(GetQuantity(@TypeOf(a)), GetQuantity(@TypeOf(b))).unit {
     if (@TypeOf(a) == UnitlessNumber and @TypeOf(b) == UnitlessNumber) {
         return a * b;
     }
@@ -435,7 +453,7 @@ fn multiply(a: anytype, b: anytype) QuantityMultiply(@TypeOf(a).quantity, @TypeO
     return .{ .number = convertToBaseUnit(a).number * convertToBaseUnit(b).number };
 }
 
-fn divide(a: anytype, b: anytype) QuantityMultiply(@TypeOf(a).quantity, @TypeOf(b).quantity).unit {
+fn divide(a: anytype, b: anytype) QuantityDivide(GetQuantity(@TypeOf(a)), GetQuantity(@TypeOf(b))).unit {
     if (@TypeOf(a) == UnitlessNumber and @TypeOf(b) == UnitlessNumber) {
         return a / b;
     }
@@ -453,7 +471,7 @@ fn divide(a: anytype, b: anytype) QuantityMultiply(@TypeOf(a).quantity, @TypeOf(
     return .{ .number = convertToBaseUnit(a).number / convertToBaseUnit(b).number };
 }
 
-fn pow(a: anytype, comptime b: comptime_int) QuantityPow(@TypeOf(a).quantity, b).unit {
+fn pow(a: anytype, comptime b: comptime_int) QuantityPow(GetQuantity(@TypeOf(a)), b).unit {
     if (@TypeOf(a) == UnitlessNumber) {
         return std.math.pow(a, @floatFromInt(b));
     }
@@ -470,7 +488,7 @@ const Celcius = MakeDerivedUnit(Temperature, 1, -273.15);
 const Fahrenheit = MakeDerivedUnit(Temperature, 1.8, -459.67);
 
 pub fn main() void {
-    const c: Celcius = .{ .number = 50 };
+    const c: Kelvin = .{ .number = 50 };
     std.debug.print("{} {d}\n", .{ @TypeOf(c), c.number });
-    std.debug.print("{} {d}\n", .{ @TypeOf(pow(c, 2)), pow(c, 2).number });
+    std.debug.print("{} {d}\n", .{ @TypeOf(multiply(c, 2.5)), multiply(c, 2.5).number });
 }

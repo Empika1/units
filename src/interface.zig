@@ -11,13 +11,13 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
         const iInfo = @typeInfo(interface);
         switch (iInfo) {
             .@"struct" => {},
-            else => return .{ .Fails = std.fmt.comptimePrint("interface is not a struct type (is a {}).", .{std.meta.activeTag(iInfo)}) },
+            else => return .{ .No = std.fmt.comptimePrint("interface is not a struct type (is a {}).", .{std.meta.activeTag(iInfo)}) },
         }
 
         const cInfo = @typeInfo(child);
         switch (cInfo) {
             .@"struct" => {},
-            else => return .{ .Fails = std.fmt.comptimePrint("child is not a struct type (is a {}).", .{std.meta.activeTag(cInfo)}) },
+            else => return .{ .No = std.fmt.comptimePrint("child is not a struct type (is a {}).", .{std.meta.activeTag(cInfo)}) },
         }
 
         const iStruct = iInfo.@"struct";
