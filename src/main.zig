@@ -76,11 +76,7 @@ fn normalizeBases(comptime bases: []const TypeValuePair) []const TypeValuePair {
         }.inner;
 
         var basesSorted: [basesReduced.len]TypeValuePair = basesReduced[0..].*;
-        // if (basesSorted.len == 4) {
-        //     basesSorted = [_]TypeValuePair{.{ .t = Time, .v = 1 }, .{ .t = Time, .v = 1 }, .{ .t = Time, .v = 1 }, .{ .t = Time, .v = 1 }};
-        //     @compileLog(basesSorted);
-        // }
-        @setEvalBranchQuota(100000);
+        @setEvalBranchQuota(100000); //yikes
         std.mem.sort(TypeValuePair, &basesSorted, {}, sortFunc);
 
         var basesNoRepeats = [_]TypeValuePair{TypeValuePair{ .t = undefined, .v = 0 }} ** basesReduced.len;
