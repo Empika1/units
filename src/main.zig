@@ -7,7 +7,7 @@ const TypeValuePair = struct {
     v: comptime_int,
 };
 
-fn satisfiesQuantity(Impl: type) result.Result {
+fn satisfiesQuantity(comptime Impl: type) result.Result {
     comptime {
         const Quantity = struct {
             pub const bases: []const TypeValuePair = undefined;
@@ -18,15 +18,17 @@ fn satisfiesQuantity(Impl: type) result.Result {
     }
 }
 
-fn assertQuantity(Impl: type) void {
-    const res = satisfiesQuantity(Impl);
-    switch (res) {
-        .Yes => {},
-        .No => @compileError(res.No),
+fn assertQuantity(comptime Impl: type) void {
+    comptime {
+        const res = satisfiesQuantity(Impl);
+        switch (res) {
+            .Yes => {},
+            .No => @compileError(res.No),
+        }
     }
 }
 
-fn satisfiesUnit(Impl: type) result.Result {
+fn satisfiesUnit(comptime Impl: type) result.Result {
     comptime {
         const Unit = struct {
             pub const scale: comptime_float = undefined;
@@ -39,11 +41,13 @@ fn satisfiesUnit(Impl: type) result.Result {
     }
 }
 
-fn assertUnit(Impl: type) void {
-    const res = satisfiesUnit(Impl);
-    switch (res) {
-        .Yes => {},
-        .No => @compileError(res.No),
+fn assertUnit(comptime Impl: type) void {
+    comptime {
+        const res = satisfiesUnit(Impl);
+        switch (res) {
+            .Yes => {},
+            .No => @compileError(res.No),
+        }
     }
 }
 
@@ -55,11 +59,10 @@ fn normalizeBases(comptime bases: []const TypeValuePair) []const TypeValuePair {
         var basesReduced: []const TypeValuePair = &.{};
         for (0..bases.len) |i| {
             assertQuantity(bases[i].t);
-            if (bases[i].t == Dimensionless) {
-                //nothing
-            } else if (bases[i].t.bases.len == 0) {
+            if (bases[i].t == Dimensionless) { //ignore dimensionless quantity
+            } else if (bases[i].t.bases.len == 1 and bases[i].t.bases[0].t == bases[i].t) { // base unit
                 basesReduced = basesReduced ++ [_]TypeValuePair{bases[i]};
-            } else {
+            } else { //composite unit
                 for (normalizeBases(bases[i].t.bases)) |baseToAdd| {
                     basesReduced = basesReduced ++ [_]TypeValuePair{.{ .t = baseToAdd.t, .v = baseToAdd.v * bases[i].v }};
                 }
@@ -107,7 +110,7 @@ fn MakeBaseQuantity(comptime uuid: anytype) type {
                 comptime {
                     _ = uuid;
                 }
-                pub const bases: []const TypeValuePair = &.{};
+                pub const bases: []const TypeValuePair = &.{.{ .t = quantity_, .v = 1 }};
                 pub const baseUnit: type = unit;
             };
             const unit = struct {
@@ -128,13 +131,13 @@ fn MakeCompositeQuantity(comptime bases_: []const TypeValuePair) type {
             return Dimensionless;
         }
 
-        if (basesNormalized.len == 1 and basesNormalized[0].v == 1) {
-            return basesNormalized[0].t;
-        }
+        // if (basesNormalized.len == 1 and basesNormalized[0].v == 1) {
+        //     return basesNormalized[0].t;
+        // }
 
         return struct {
             const quantity_ = struct {
-                pub const bases: []const TypeValuePair = &.{};
+                pub const bases: []const TypeValuePair = basesNormalized;
                 pub const baseUnit: type = unit;
             };
             const unit = struct {
@@ -159,14 +162,27 @@ fn QuantityPow(comptime T: type, comptime pow: comptime_int) type {
     comptime return MakeCompositeQuantity(&.{.{ .t = T, .v = pow }});
 }
 
-fn GetBaseUnit(Unit: type) type {
+//BaseUnit * shift_ + scale_ = DerivedUnit
+fn MakeDerivedUnit(comptime Quantity: type, comptime scale_: comptime_float, comptime shift_: comptime_float) type {
+    comptime {
+        assertQuantity(Quantity);
+        return struct {
+            pub const scale: comptime_float = scale_;
+            pub const shift: comptime_float = shift_;
+            pub const quantity: type = Quantity;
+            number: f64,
+        };
+    }
+}
+
+fn GetBaseUnit(comptime Unit: type) type {
     comptime {
         assertUnit(Unit);
         return Unit.quantity.baseUnit;
     }
 }
 
-fn assertHaveSameQuantity(Unit1: type, Unit2: type) void {
+fn assertHaveSameQuantity(comptime Unit1: type, comptime Unit2: type) void {
     comptime {
         assertUnit(Unit1);
         assertUnit(Unit2);
@@ -215,8 +231,8 @@ fn unitPow(a: anytype, comptime pow: comptime_int) QuantityPow(@TypeOf(a).quanti
 const Time: type = MakeBaseQuantity("Time");
 const Second: type = Time.baseUnit;
 
-const Length: type = MakeBaseQuantity("Length");
-const Meter: type = Length.baseUnit;
+const Distance: type = MakeBaseQuantity("Length");
+const Meter: type = Distance.baseUnit;
 
 const Mass: type = MakeBaseQuantity("Mass");
 const Kilogram: type = Mass.baseUnit;
@@ -233,10 +249,33 @@ const Mole: type = Amount.baseUnit;
 const LuminousIntensity: type = MakeBaseQuantity("LuminousIntensity");
 const Candela: type = Amount.baseUnit;
 
-const Area: type = QuantityPow(Length, 2);
-const Volume: type = QuantityPow(Length, 3);
-const Velocity: type = QuantityDivide(Length, Time);
+//
+const Speed: type = QuantityDivide(Distance, Time);
 
+const Acceleration: type = QuantityDivide(Speed, Time);
+
+const Force: type = QuantityMultiply(Mass, Acceleration);
+const Newton: type = Force.baseUnit;
+
+const Energy: type = QuantityMultiply(Force, Distance);
+const Joule: type = Energy.baseUnit;
+
+const Power: type = QuantityDivide(Energy, Distance);
+const Watt: type = Power.baseUnit;
+
+fn gravPotentialEnergy(m: anytype, h: anytype) Joule {
+    const g: Acceleration.baseUnit = .{ .number = 9.8 };
+    return unitMultiply(unitMultiply(m, g), h);
+}
+
+const Foot: type = MakeDerivedUnit(Distance, 3.28083989501, 0);
+const Pound: type = MakeDerivedUnit(Mass, 2.20462262185, 0);
+const Celcius: type = MakeDerivedUnit(Temperature, 1, -273.15);
+const Fahrenheit: type = MakeDerivedUnit(Temperature, 1.8, -459.67);
 pub fn main() void {
-    std.debug.print("{}", .{unitDivide(Meter{ .number = 12 }, Second{ .number = 2 })});
+    //std.debug.print("{d}\n", .{gravPotentialEnergy(Kilogram{ .number = 10 }, Meter{ .number = 5 }).number});
+    //std.debug.print("{d}\n", .{gravPotentialEnergy(Pound{ .number = 10 }, Foot{ .number = 5 }).number}); //still correct number in Joules, unit conversion handled
+    std.debug.print("{d}\n", .{unitConvert(Meter{ .number = 50 }, Foot).number}); //still correct number in Joules, unit conversion handled
+
+    //std.debug.print("{d}", .{gravPotentialEnergy(Kelvin{ .number = 10 }, Meter{ .number = 5 }).number}); //compile error, because temperature * distance != energy
 }
