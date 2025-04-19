@@ -1,12 +1,7 @@
 const std = @import("std");
 const result = @import("result.zig");
 
-const SatisfiesInterface = union(enum) {
-    Satisfies: void,
-    Fails: []const u8,
-};
-
-pub fn satisfiesInterface(comptime interface: type, comptime child: type) result.Result {
+pub fn satisfiesInterface(comptime interface: type, comptime implementer: type) result.Result {
     comptime {
         const iInfo = @typeInfo(interface);
         switch (iInfo) {
@@ -14,10 +9,10 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
             else => return .{ .No = std.fmt.comptimePrint("interface is not a struct type (is a {}).", .{std.meta.activeTag(iInfo)}) },
         }
 
-        const cInfo = @typeInfo(child);
+        const cInfo = @typeInfo(implementer);
         switch (cInfo) {
             .@"struct" => {},
-            else => return .{ .No = std.fmt.comptimePrint("child is not a struct type (is a {}).", .{std.meta.activeTag(cInfo)}) },
+            else => return .{ .No = std.fmt.comptimePrint("implementer is not a struct type (is a {}).", .{std.meta.activeTag(cInfo)}) },
         }
 
         const iStruct = iInfo.@"struct";
@@ -28,10 +23,10 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
             for (cStruct.fields) |cField| {
                 if (std.mem.eql(u8, iField.name, cField.name)) {
                     if (iField.type != cField.type) {
-                        return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iField.name, iField.type, cField.type }) };
+                        return .{ .No = std.fmt.comptimePrint("implementer has no field that matches {s} in interface. type mismatch ({} in interface vs {} in implementer)", .{ iField.name, iField.type, cField.type }) };
                     }
                     if (iField.is_comptime != cField.is_comptime) {
-                        return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface. comptime-ness mismatch ({s} in interface vs {s} in child)", .{
+                        return .{ .No = std.fmt.comptimePrint("implementer has no field that matches {s} in interface. comptime-ness mismatch ({s} in interface vs {s} in implementer)", .{
                             iField.name,
                             (if (iField.is_comptime)
                                 "comptime"
@@ -48,7 +43,7 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
                 }
             }
             if (!childHasField) {
-                return .{ .No = std.fmt.comptimePrint("child has no field that matches {s} in interface", .{iField.name}) };
+                return .{ .No = std.fmt.comptimePrint("implementer has no field that matches {s} in interface", .{iField.name}) };
             }
         }
 
@@ -58,15 +53,15 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
 
             var childHasDecl: bool = false;
             for (cStruct.decls) |cDecl| {
-                const cDeclType = @TypeOf(@field(child, cDecl.name));
-                const cDeclIsConst = @typeInfo(@TypeOf(&@field(child, cDecl.name))).pointer.is_const;
+                const cDeclType = @TypeOf(@field(implementer, cDecl.name));
+                const cDeclIsConst = @typeInfo(@TypeOf(&@field(implementer, cDecl.name))).pointer.is_const;
 
                 if (std.mem.eql(u8, iDecl.name, cDecl.name)) {
                     if (iDeclType != cDeclType) {
-                        return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface. type mismatch ({} in interface vs {} in child)", .{ iDecl.name, iDeclType, cDeclType }) };
+                        return .{ .No = std.fmt.comptimePrint("implementer has no decl that matches {s} in interface. type mismatch ({} in interface vs {} in implementer)", .{ iDecl.name, iDeclType, cDeclType }) };
                     }
                     if (iDeclIsConst != cDeclIsConst) {
-                        return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface. constness mismatch ({s} in interface vs {s} in child)", .{
+                        return .{ .No = std.fmt.comptimePrint("implementer has no decl that matches {s} in interface. constness mismatch ({s} in interface vs {s} in implementer)", .{
                             iDecl.name,
                             (if (iDeclIsConst)
                                 "const"
@@ -84,7 +79,7 @@ pub fn satisfiesInterface(comptime interface: type, comptime child: type) result
             }
 
             if (!childHasDecl) {
-                return .{ .No = std.fmt.comptimePrint("child has no decl that matches {s} in interface", .{iDecl.name}) };
+                return .{ .No = std.fmt.comptimePrint("implementer has no decl that matches {s} in interface", .{iDecl.name}) };
             }
         }
 
