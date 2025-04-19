@@ -85,7 +85,7 @@ pub fn MakeSiUnitSystem(
             pub const Henry: type = Inductance.baseUnit;
 
             //no base unit, temperature already exists
-            pub const DegreeCelsius: type = UnitSystem.MakeDerivedUnit(BaseUnits.Temperature, 1, -273.15);
+            pub const DegreeCelsius: type = BaseUnits.Kelvin.Derive(1, -273.15);
 
             pub const LuminousFlux: type = BaseUnits.LuminousIntensity.multiply(SolidAngle);
             pub const Lumen: type = LuminousFlux.baseUnit;

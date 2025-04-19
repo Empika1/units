@@ -6,10 +6,10 @@ const system = siunits.f64SiUnitSystem.UnitSystem;
 const base = siunits.f64SiUnitSystem.BaseUnits;
 const derived = siunits.f64SiUnitSystem.DerivedUnits;
 
-pub const Foot: type = system.MakeDerivedUnit(base.Distance, 3.28083989501, 0);
-pub const Inch: type = system.MakeDerivedUnit(base.Distance, 39.3700787402, 0);
-pub const Pound: type = system.MakeDerivedUnit(base.Mass, 2.20462262185, 0);
-pub const PoundForce: type = system.MakeDerivedUnit(derived.Force, 0.22480892365, 0);
+pub const Foot: type = base.Meter.Derive(3.28083989501, 0);
+pub const Inch: type = Foot.Derive(12, 0);
+pub const Pound: type = base.Kilogram.Derive(2.20462262185, 0);
+pub const PoundForce: type = derived.Newton.Derive(0.22480892365, 0);
 pub const SquareInch: type = Inch.Pow(2);
 pub const PSI: type = PoundForce.Divide(SquareInch);
 
