@@ -1,7 +1,7 @@
 const std = @import("std");
 
-pub fn MakeNumSystem(comptime NumType: type) type {
-    comptime return struct {
+pub fn MakeNumSystem(NumType: type) type {
+    return struct {
         pub fn add(a: NumType, b: NumType) NumType {
             return a + b;
         }
@@ -18,7 +18,7 @@ pub fn MakeNumSystem(comptime NumType: type) type {
             return a / b;
         }
 
-        pub fn pow(a: NumType, comptime b: comptime_int) NumType {
+        pub fn pow(a: NumType, b: comptime_int) NumType {
             return std.math.pow(NumType, a, @floatFromInt(b));
         }
     };

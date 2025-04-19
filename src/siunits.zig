@@ -2,14 +2,14 @@ const units = @import("units.zig");
 const num = @import("num.zig");
 
 pub fn MakeSiUnitSystem(
-    comptime Num: type,
-    comptime numAdd: fn (Num, Num) Num,
-    comptime numSubtract: fn (Num, Num) Num,
-    comptime numMultiply: fn (Num, Num) Num,
-    comptime numDivide: fn (Num, Num) Num,
-    comptime numPow: fn (Num, comptime comptime_int) Num,
+    Num: type,
+    numAdd: fn (Num, Num) Num,
+    numSubtract: fn (Num, Num) Num,
+    numMultiply: fn (Num, Num) Num,
+    numDivide: fn (Num, Num) Num,
+    numPow: fn (Num, comptime_int) Num,
 ) type {
-    comptime return struct {
+    return struct {
         pub const UnitSystem: type = units.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
         pub const BaseUnits: type = struct {
             pub const Time: type = UnitSystem.MakeBaseQuantity("Time");
