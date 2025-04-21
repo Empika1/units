@@ -10,7 +10,13 @@ pub fn MakeSiUnitSystem(
     numPow: fn (Num, comptime_int) Num,
 ) type {
     return struct {
+        /// The SI Unit System itself.
+        /// Doesn't come with any defined Quantities or Units initially.
         pub const UnitSystem: type = units.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
+
+        /// The 7 SI Base Quantities and their associated Base units.
+        /// Sourced from https://en.wikipedia.org/wiki/SI_base_unit.
+        /// Not sure I agree with Mole being a Base Unit, but whatever.
         pub const BaseUnits: type = struct {
             pub const Time: type = UnitSystem.MakeBaseQuantity("Time");
             pub const Second: type = Time.BaseUnit;
@@ -34,9 +40,10 @@ pub fn MakeSiUnitSystem(
             pub const Candela: type = Amount.BaseUnit;
         };
 
-        //sourced from https://en.wikipedia.org/wiki/SI_derived_unit
-        //various quantities and units are equal to another but used in different contexts
-        //for example, frequency and radioactivity have the same base quantities.
+        /// Some commonly used SI Derived Quantities and Units.
+        /// Sourced from https://en.wikipedia.org/wiki/SI_derived_unit.
+        /// Various Quantities and Units are equal to another but used in different contexts.
+        /// For example, Frequency and Radioactivity are technically equal.
         pub const DerivedUnits: type = struct {
             //named units
             pub const Frequency: type = UnitSystem.Dimensionless.Divide(BaseUnits.Time);
@@ -84,7 +91,7 @@ pub fn MakeSiUnitSystem(
             pub const Inductance: type = MagneticFlux.Divide(BaseUnits.ElectricCurrent);
             pub const Henry: type = Inductance.BaseUnit;
 
-            //no base unit, temperature already exists
+            /// Temperature already exists as a Base Quantity, so no new Quantity is needed.
             pub const DegreeCelsius: type = BaseUnits.Kelvin.Derive(1, -273.15);
 
             pub const LuminousFlux: type = BaseUnits.LuminousIntensity.Multiply(SolidAngle);
@@ -203,4 +210,7 @@ pub fn MakeSiUnitSystem(
     };
 }
 
-pub const f64SiUnitSystem = MakeSiUnitSystem(f64, num.f64System.add, num.f64System.subtract, num.f64System.multiply, num.f64System.divide, num.f64System.pow);
+/// The SI System with f32 as its number type.
+pub const f32System = MakeSiUnitSystem(f32, num.f32System.add, num.f32System.subtract, num.f32System.multiply, num.f32System.divide, num.f32System.pow);
+/// The SI System with f64 as its number type.
+pub const f64System = MakeSiUnitSystem(f64, num.f64System.add, num.f64System.subtract, num.f64System.multiply, num.f64System.divide, num.f64System.pow);
