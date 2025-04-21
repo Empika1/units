@@ -17,7 +17,6 @@ pub fn MakeUnitSystem(
 ) type {
     return struct {
         const System_ = struct {
-            const secret = systemSecret;
             pub const Dimensionless: type = MakeBaseQuantity("One");
             pub const One: type = Dimensionless.BaseUnit;
 
@@ -69,7 +68,6 @@ pub fn MakeUnitSystem(
                         comptime {
                             _ = uuid;
                         }
-                        const secret = quantitySecret;
                         pub const bases: []const TypeValuePair = bases_;
                         pub const BaseUnit: type = Unit;
                         pub const System: type = System_;
@@ -118,7 +116,6 @@ pub fn MakeUnitSystem(
             fn MakeUnit(scale_: Num, shift_: Num, Quantity_: type) type {
                 return struct {
                     //BaseUnit.number * scale_ + shift_ = number
-                    const secret = unitSecret;
                     pub const scale: Num = scale_;
                     pub const shift: Num = shift_;
                     pub const Quantity: type = Quantity_;
