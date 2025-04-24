@@ -100,7 +100,9 @@ pub fn MakeUnitSystem(
             /// The Unit which measures a Dimensionless Quantity. Not literally the number 1.
             pub const One: type = Dimensionless.BaseUnit;
 
+            ///"normalizes" the bases passed in into base quantities, in a single, sorted, combined, order
             fn normalizeBases(bases: []const TypeIntPair) []const TypeIntPair {
+                //get all the base quantities
                 var basesReduced: []const TypeIntPair = &.{};
                 for (0..bases.len) |i| {
                     if (bases[i].t == Dimensionless) { //ignore Dimensionless Quantity
@@ -113,29 +115,32 @@ pub fn MakeUnitSystem(
                     }
                 }
 
+                //sort all the bases so repeats can be removed
                 const sortFunc: fn (void, TypeIntPair, TypeIntPair) bool = struct {
                     pub fn inner(_: void, a: TypeIntPair, b: TypeIntPair) bool {
                         return std.mem.order(u8, @typeName(a.t), @typeName(b.t)) == std.math.Order.gt;
                     }
                 }.inner;
-
                 var basesSorted: [basesReduced.len]TypeIntPair = basesReduced[0..].*;
                 @setEvalBranchQuota(100000); //yikes
                 std.mem.sort(TypeIntPair, &basesSorted, {}, sortFunc);
 
+                //remove the repeats and bases with a value of 0
                 var basesNoRepeats = [_]TypeIntPair{TypeIntPair{ .t = undefined, .v = 0 }} ** basesReduced.len;
-                var j = 0;
                 var i = 0;
+                var j = -1;
                 while (i < basesSorted.len) : (i += 1) {
-                    if (i > 0 and basesSorted[i].t == basesSorted[i - 1].t) {
-                        basesNoRepeats[j - 1].v += basesSorted[i].v;
-                    } else {
-                        if (j > 0 and basesNoRepeats[j - 1].v == 0) {
-                            j -= 1;
+                    if (i == 0 or basesSorted[i].t != basesSorted[i - 1].t) {
+                        if (j < 0 or basesNoRepeats[j].v != 0) {
+                            j += 1;
                         }
                         basesNoRepeats[j] = basesSorted[i];
-                        j += 1;
+                    } else {
+                        basesNoRepeats[j].v += basesSorted[i].v;
                     }
+                }
+                if (j < 0 or basesNoRepeats[j].v != 0) {
+                    j += 1;
                 }
 
                 const basesConstSlice = basesNoRepeats[0..j].*;
@@ -164,6 +169,8 @@ pub fn MakeUnitSystem(
                         pub const BaseUnit: type = Unit;
                         /// The Unit System this Unit is a part of.
                         pub const System: type = System_;
+                        /// The name of this Quantity. Defaults to something unreadable, but can be redefined as desired
+                        pub var name: []const u8 = @typeName(@This());
 
                         /// Multiplies this Quantity by another Quantity to make a new Quantity.
                         /// For example: "Energy = Force.Multiply(Distance)".
@@ -243,6 +250,8 @@ pub fn MakeUnitSystem(
                     pub const Quantity: type = Quantity_;
                     /// The Unit System this Unit is a part of.
                     pub const System: type = System_;
+                    /// The name of this Unit. Defaults to something unreadable, but can be redefined as desired
+                    pub var name: []const u8 = @typeName(@This());
                     /// The number this Unit stores.
                     number: Num,
 
