@@ -1,10 +1,14 @@
 const std = @import("std");
-const units = @import("units.zig");
-const siunits = @import("siunits.zig");
+const units = @import("units");
 
-const system = siunits.f64System.UnitSystem;
-const base = siunits.f64System.BaseUnits;
-const derived = siunits.f64System.DerivedUnits;
+const si = units.si;
+const system = si.f64System.UnitSystem;
+const base = si.f64System.baseUnits;
+const derived = si.f64System.derivedUnits;
+
+const idHaver = struct {
+    const ID: f32 = 0;
+};
 
 pub fn main() void {
     const Celcius = base.Kelvin.Derive(1, -273.15);

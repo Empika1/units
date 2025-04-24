@@ -299,7 +299,11 @@ pub fn MakeUnitSystem(
 
                     /// Converts a value from one Unit to another.
                     /// For example, you could write "TemperatureInCelcius = TemperatureInKelvin.Convert(Celcius)".
-                    pub fn convert(self: @This(), to: type) to {
+                    pub fn convert(self: @This(), to: type) t: {
+                        assertUnit(to, "to");
+                        assertSameQuantity(@This(), to, "@This()", "to");
+                        break :t to;
+                    } {
                         return unitConvert(self, to);
                     }
 
