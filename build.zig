@@ -24,6 +24,7 @@ pub fn build(b: *std.Build) !void {
         if (file.kind != .file) {
             continue;
         }
+        const fileNameStem = std.fs.path.stem(file.name);
         const sourceName = try std.fs.path.join(b.allocator, &.{ "examples", file.name });
         defer b.allocator.free(sourceName);
         const exampleMod = b.createModule(.{
@@ -32,7 +33,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
         const exampleExe = b.addExecutable(.{
-            .name = file.name,
+            .name = fileNameStem,
             .root_module = exampleMod,
         });
         b.installArtifact(exampleExe);
@@ -43,9 +44,9 @@ pub fn build(b: *std.Build) !void {
         if (b.args) |args| {
             exampleRunCmd.addArgs(args);
         }
-        const exampleRunName = try std.fmt.allocPrint(b.allocator, "run-{s}", .{file.name});
+        const exampleRunName = try std.fmt.allocPrint(b.allocator, "run-{s}", .{fileNameStem});
         defer b.allocator.free(exampleRunName);
-        const exampleDescName = try std.fmt.allocPrint(b.allocator, "run the example {s}", .{file.name});
+        const exampleDescName = try std.fmt.allocPrint(b.allocator, "run the example {s}", .{fileNameStem});
         defer b.allocator.free(exampleDescName);
         const exampleRunStep = b.step(exampleRunName, exampleDescName);
         exampleRunStep.dependOn(&exampleRunCmd.step);
