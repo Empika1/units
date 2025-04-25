@@ -4,6 +4,8 @@ const SystemID: type = struct {};
 const QuantityID: type = struct {};
 const UnitID: type = struct {};
 
+/// For type checking.
+/// Checks if a struct passed in has a const decl called "ID" with a value of IdT.
 pub fn hasID(T: type, IdT: type) bool {
     const tInfo = @typeInfo(T);
     switch (tInfo) {
@@ -17,6 +19,12 @@ pub fn hasID(T: type, IdT: type) bool {
             if (ID == null) {
                 return false;
             }
+            if (!@typeInfo(@TypeOf(&T.ID)).Pointer.is_const) {
+                return false;
+            }
+            if (@TypeOf(T.ID) != type) {
+                return false;
+            }
             if (T.ID != IdT) {
                 return false;
             }
@@ -26,6 +34,9 @@ pub fn hasID(T: type, IdT: type) bool {
     }
 }
 
+/// For type checking.
+/// Asserts that the System type passed in a Unit System.
+/// name is the name of the System. Used for a better error message
 pub fn assertUnitSystem(System: type, name: []const u8) void {
     if (!hasID(System, SystemID)) {
         @compileError(std.fmt.comptimePrint(
@@ -35,6 +46,9 @@ pub fn assertUnitSystem(System: type, name: []const u8) void {
     }
 }
 
+/// For type checking.
+/// Asserts that the Quantity type passed in a Quantity.
+/// name is the name of the Quantity. Used for a better error message
 pub fn assertQuantity(Quantity: type, name: []const u8) void {
     if (!hasID(Quantity, QuantityID)) {
         @compileError(std.fmt.comptimePrint(
@@ -44,6 +58,9 @@ pub fn assertQuantity(Quantity: type, name: []const u8) void {
     }
 }
 
+/// For type checking.
+/// Asserts that the Unit type passed in a Unit.
+/// name is the name of the Unit. Used for a better error message
 pub fn assertUnit(Unit: type, name: []const u8) void {
     if (!hasID(Unit, UnitID)) {
         @compileError(std.fmt.comptimePrint(
@@ -53,6 +70,10 @@ pub fn assertUnit(Unit: type, name: []const u8) void {
     }
 }
 
+/// For type checking.
+/// Assumes you have already verified that T is a Quantity or Unit.
+/// Asserts that the Quantity/Unit T is from the right Unit System.
+/// name is the name of the Quantity/Unit. Used for a better error message.
 pub fn assertRightSystem(T: type, System: type, name: []const u8) void {
     if (T.System != System) {
         @compileError(std.fmt.comptimePrint(
@@ -62,6 +83,10 @@ pub fn assertRightSystem(T: type, System: type, name: []const u8) void {
     }
 }
 
+/// For type checking.
+/// Assumes you have already verified that T1 and T2 are Quantities or Units.
+/// Asserts that T1 and T2 are from the same Unit System.
+/// name1 and name2 are the names of T1 and T2. Used for a better error message.
 pub fn assertSameSystem(T1: type, T2: type, name1: []const u8, name2: []const u8) void {
     if (T1.System != T2) {
         @compileError(std.fmt.comptimePrint(
@@ -71,6 +96,10 @@ pub fn assertSameSystem(T1: type, T2: type, name1: []const u8, name2: []const u8
     }
 }
 
+/// For type checking.
+/// Assumes you have already verified that Unit is a Unit and Quantity is a Quantity.
+/// Asserts that Unit has a Quantity of Quantity.
+/// unitName and quantityName are the names of Unit and Quantity. Used for a better error message.
 pub fn assertRightQuantity(Unit: type, Quantity: type, unitName: []const u8, quantityName: []const u8) void {
     if (Unit.Quantity != Quantity) {
         @compileError(std.fmt.comptimePrint(
@@ -80,6 +109,10 @@ pub fn assertRightQuantity(Unit: type, Quantity: type, unitName: []const u8, qua
     }
 }
 
+/// For type checking.
+/// Assumes you have already verified that Unit1 and Unit2 are Units.
+/// Asserts that Unit1 and Unit2 have the same Quantity.
+/// name1 and name2 are the names of T1 and T2. Used for a better error message.
 pub fn assertSameQuantity(Unit1: type, Unit2: type, name1: []const u8, name2: []const u8) void {
     if (Unit1.Quantity != Unit2.Quantity) {
         @compileError(std.fmt.comptimePrint(
@@ -94,28 +127,6 @@ pub const TypeIntPair = struct {
     t: type,
     v: comptime_int,
 };
-
-/// Names all the Quantities and Units which are const decls in a struct to their decl names
-/// If the same type is declared twice, the first name is used
-// pub fn nameQuantitiesAndUnits(T: type) void {
-//     switch (@typeInfo(T)) {
-//         .@"struct" => |s| {
-//             for (s.decls) |decl| {
-//                 // if (@TypeOf(@field(T, decl.name)) != type) { //Ignore non-type decls
-//                 //     continue;
-//                 // }
-//                 // if (!hasID(T, QuantityID) and !hasID(T, QuantityID)) { //is not Quantity or Unit
-//                 //     continue;
-//                 // }
-//                 // if (T.name != @typeName(T)) { //already renamed
-//                 //     continue;
-//                 // }
-//                 @field(T, decl.name).name = decl.name;
-//             }
-//         },
-//         else => @compileError("Cannot name Quantities and Units in a non-struct type."),
-//     }
-// }
 
 /// Makes a Unit System from a base number type and arithmetic functions which act on the number type.
 /// All Quantities and Units belong to a Unit System, and Quantities/Units from different Unit Systems cannot be used together.
