@@ -4,7 +4,7 @@ const SystemID: type = struct {};
 const QuantityID: type = struct {};
 const UnitID: type = struct {};
 
-fn hasID(T: type, IdT: type) bool {
+pub fn hasID(T: type, IdT: type) bool {
     const tInfo = @typeInfo(T);
     switch (tInfo) {
         .@"struct" => {
@@ -26,7 +26,7 @@ fn hasID(T: type, IdT: type) bool {
     }
 }
 
-fn assertUnitSystem(System: type, name: []const u8) void {
+pub fn assertUnitSystem(System: type, name: []const u8) void {
     if (!hasID(System, SystemID)) {
         @compileError(std.fmt.comptimePrint(
             "{s} ({s}) is not a Unit System. Create a Unit System via MakeUnitSystem.",
@@ -35,7 +35,7 @@ fn assertUnitSystem(System: type, name: []const u8) void {
     }
 }
 
-fn assertQuantity(Quantity: type, name: []const u8) void {
+pub fn assertQuantity(Quantity: type, name: []const u8) void {
     if (!hasID(Quantity, QuantityID)) {
         @compileError(std.fmt.comptimePrint(
             "{s} ({s}) is not a Quantity. Create a Quantity via MakeBaseQuantity, MakeCompositeBaseQuantity, or from an existing Quantity or Unit.",
@@ -44,7 +44,7 @@ fn assertQuantity(Quantity: type, name: []const u8) void {
     }
 }
 
-fn assertUnit(Unit: type, name: []const u8) void {
+pub fn assertUnit(Unit: type, name: []const u8) void {
     if (!hasID(Unit, UnitID)) {
         @compileError(std.fmt.comptimePrint(
             "{s} ({s}) is not a Unit. Create a Unit via an existing Quantity or Unit",
@@ -53,7 +53,7 @@ fn assertUnit(Unit: type, name: []const u8) void {
     }
 }
 
-fn assertRightSystem(T: type, System: type, name: []const u8) void {
+pub fn assertRightSystem(T: type, System: type, name: []const u8) void {
     if (T.System != System) {
         @compileError(std.fmt.comptimePrint(
             "{s} ({s}) is from the wrong Unit System.",
@@ -62,7 +62,25 @@ fn assertRightSystem(T: type, System: type, name: []const u8) void {
     }
 }
 
-fn assertSameQuantity(Unit1: type, Unit2: type, name1: []const u8, name2: []const u8) void {
+pub fn assertSameSystem(T1: type, T2: type, name1: []const u8, name2: []const u8) void {
+    if (T1.System != T2) {
+        @compileError(std.fmt.comptimePrint(
+            "{s} ({s}) is from a different unit system than {s} ({s}).",
+            .{ name1, @typeName(T1), name2, @typeName(T2) },
+        ));
+    }
+}
+
+pub fn assertRightQuantity(Unit: type, Quantity: type, unitName: []const u8, quantityName: []const u8) void {
+    if (Unit.Quantity != Quantity) {
+        @compileError(std.fmt.comptimePrint(
+            "{s} ({s})'s Quantity is not {s} ({s}).",
+            .{ unitName, @typeName(Unit), quantityName, @typeName(Quantity) },
+        ));
+    }
+}
+
+pub fn assertSameQuantity(Unit1: type, Unit2: type, name1: []const u8, name2: []const u8) void {
     if (Unit1.Quantity != Unit2.Quantity) {
         @compileError(std.fmt.comptimePrint(
             "{s} ({s}) has a different Quantity than {s} ({s}).",
@@ -77,6 +95,28 @@ pub const TypeIntPair = struct {
     v: comptime_int,
 };
 
+/// Names all the Quantities and Units which are const decls in a struct to their decl names
+/// If the same type is declared twice, the first name is used
+// pub fn nameQuantitiesAndUnits(T: type) void {
+//     switch (@typeInfo(T)) {
+//         .@"struct" => |s| {
+//             for (s.decls) |decl| {
+//                 // if (@TypeOf(@field(T, decl.name)) != type) { //Ignore non-type decls
+//                 //     continue;
+//                 // }
+//                 // if (!hasID(T, QuantityID) and !hasID(T, QuantityID)) { //is not Quantity or Unit
+//                 //     continue;
+//                 // }
+//                 // if (T.name != @typeName(T)) { //already renamed
+//                 //     continue;
+//                 // }
+//                 @field(T, decl.name).name = decl.name;
+//             }
+//         },
+//         else => @compileError("Cannot name Quantities and Units in a non-struct type."),
+//     }
+// }
+
 /// Makes a Unit System from a base number type and arithmetic functions which act on the number type.
 /// All Quantities and Units belong to a Unit System, and Quantities/Units from different Unit Systems cannot be used together.
 /// Quantities are things like length, time, and energy: all things which can be measured.
@@ -90,6 +130,7 @@ pub fn MakeUnitSystem(
     numDivide: fn (Num, Num) Num,
     numPow: fn (Num, comptime_int) Num,
 ) type {
+    @setEvalBranchQuota(1000000);
     return struct {
         const System_ = struct {
             /// A tag which marks this generated type as a Unit System.
@@ -169,8 +210,6 @@ pub fn MakeUnitSystem(
                         pub const BaseUnit: type = Unit;
                         /// The Unit System this Unit is a part of.
                         pub const System: type = System_;
-                        /// The name of this Quantity. Defaults to something unreadable, but can be redefined as desired
-                        pub var name: []const u8 = @typeName(@This());
 
                         /// Multiplies this Quantity by another Quantity to make a new Quantity.
                         /// For example: "Energy = Force.Multiply(Distance)".
@@ -250,8 +289,6 @@ pub fn MakeUnitSystem(
                     pub const Quantity: type = Quantity_;
                     /// The Unit System this Unit is a part of.
                     pub const System: type = System_;
-                    /// The name of this Unit. Defaults to something unreadable, but can be redefined as desired
-                    pub var name: []const u8 = @typeName(@This());
                     /// The number this Unit stores.
                     number: Num,
 

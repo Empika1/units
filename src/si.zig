@@ -9,7 +9,7 @@ pub fn MakeSiUnitSystem(
     numDivide: fn (Num, Num) Num,
     numPow: fn (Num, comptime_int) Num,
 ) type {
-    return struct {
+    const S = struct {
         /// The SI Unit System itself.
         /// Doesn't come with any defined Quantities or Units initially.
         pub const UnitSystem: type = units.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
@@ -208,6 +208,13 @@ pub fn MakeSiUnitSystem(
             pub const TemperatureGradient: type = baseUnits.Temperature.Divide(baseUnits.Distance);
         };
     };
+
+    // @setEvalBranchQuota(1000000);
+    // units.nameQuantitiesAndUnits(S.baseUnits);
+    // units.nameQuantitiesAndUnits(S.derivedUnits);
+    //S.baseUnits.Kelvin.name = "Kelvin";
+
+    return S;
 }
 
 /// The SI System with f32 as its number type.
