@@ -19,7 +19,7 @@ pub fn hasID(T: type, IdT: type) bool {
             if (ID == null) {
                 return false;
             }
-            if (!@typeInfo(@TypeOf(&T.ID)).Pointer.is_const) {
+            if (!@typeInfo(@TypeOf(&T.ID)).pointer.is_const) {
                 return false;
             }
             if (@TypeOf(T.ID) != type) {

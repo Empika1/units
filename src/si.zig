@@ -1,4 +1,4 @@
-const units = @import("units.zig");
+const core = @import("core.zig");
 const num = @import("num.zig");
 
 pub fn MakeSiUnitSystem(
@@ -12,7 +12,7 @@ pub fn MakeSiUnitSystem(
     const S = struct {
         /// The SI Unit System itself.
         /// Doesn't come with any defined Quantities or Units initially.
-        pub const UnitSystem: type = units.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
+        pub const UnitSystem: type = core.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
 
         /// The 7 SI Base Quantities and their associated Base units.
         /// Sourced from https://en.wikipedia.org/wiki/SI_base_unit.

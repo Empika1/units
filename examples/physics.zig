@@ -1,8 +1,9 @@
 const std = @import("std");
-const u = @import("units");
+const units = @import("units");
 
-const units = u.units; //TODO: make "units.units" not confusing
-const si = u.si;
+const core = units.core;
+
+const si = units.si;
 const system = si.f64System.UnitSystem;
 const base = si.f64System.baseUnits;
 const derived = si.f64System.derivedUnits;
@@ -13,12 +14,12 @@ fn kineticEnergyGeneric(mass: anytype, velocity: anytype) t: {
     //a bunch of "type checking" to assert that mass and velocity are what they say they are. returns nice errors if you pass wrong things in.
     //type checking error is in the return type so the nice custom error always prints before any error related to the return type
     //technically this isn't necessary, but passing in invalid types could result in nonsense that's best to avoid
-    units.assertUnit(@TypeOf(mass), "@TypeOf(mass)");
-    units.assertRightSystem(@TypeOf(mass), system, "@TypeOf(mass)");
-    units.assertRightQuantity(@TypeOf(mass), base.Mass, "@TypeOf(mass)", "base.Mass");
-    units.assertUnit(@TypeOf(velocity), "TypeOf(velocity)");
-    units.assertRightSystem(@TypeOf(velocity), system, "TypeOf(velocity)");
-    units.assertRightQuantity(@TypeOf(velocity), derived.Velocity, "TypeOf(velocity)", "derived.Velocity");
+    core.assertUnit(@TypeOf(mass), "@TypeOf(mass)");
+    core.assertRightSystem(@TypeOf(mass), system, "@TypeOf(mass)");
+    core.assertRightQuantity(@TypeOf(mass), base.Mass, "@TypeOf(mass)", "base.Mass");
+    core.assertUnit(@TypeOf(velocity), "TypeOf(velocity)");
+    core.assertRightSystem(@TypeOf(velocity), system, "TypeOf(velocity)");
+    core.assertRightQuantity(@TypeOf(velocity), derived.Velocity, "TypeOf(velocity)", "derived.Velocity");
     break :t derived.Joule;
 } {
     return (system.One{ .number = 0.5 }).multiply(mass).multiply(velocity.pow(2)); //hilariously small function body
@@ -33,10 +34,11 @@ fn kineticEnergySpecific(mass: base.Kilogram, velocity: derived.Velocity.BaseUni
 //you can imagine defining other functions for other physics formula
 
 pub fn main() void {
-    const myMass = base.Kilogram{ .number = 3 };
+    const Pound = base.Kilogram.Derive(2.20462262185, 0); //define pounds
+    const myMass = Pound{ .number = 6 };
     const myVelocity = derived.Velocity.BaseUnit{ .number = 5 };
     std.debug.print("Kinetic Energy: {d} Joules\n", .{kineticEnergyGeneric(myMass, myVelocity).number});
-    std.debug.print("Kinetic Energy: {d} Joules\n", .{kineticEnergySpecific(myMass, myVelocity).number});
+    std.debug.print("Kinetic Energy: {d} Joules\n", .{kineticEnergySpecific(myMass.convertToBase(), myVelocity).number}); //if using the specific function, mass cannot be directly passed in as pounds
 
     //std.debug.print("Kinetic Energy: {d} Joules\n", .{kineticEnergy(myVelocity, myMass).number}); //uncomment this line to see a nice custom error message
 }
