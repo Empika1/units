@@ -72,9 +72,9 @@ pub fn main() void {
     const kineticEnergy1 = kineticEnergyGeneric(mass, speed);
     const potentialEnergyNeeded1 = gravitationalPotentialEnergyGeneric(mass, height);
     if (kineticEnergy1.less(potentialEnergyNeeded1)) {
-        std.debug.print("Can't make it :(. Kinetic energy is {d} Joules but you need {d} Joules", .{ kineticEnergy1.number, potentialEnergyNeeded1.number });
+        std.debug.print("Can't make it :(. Kinetic energy is {d} Joules but you need {d} Joules\n", .{ kineticEnergy1.number, potentialEnergyNeeded1.number });
     } else {
-        std.debug.print("Can make it :) Kinetic energy is {d} Joules and you only need {d} Joules", .{ kineticEnergy1.number, potentialEnergyNeeded1.number });
+        std.debug.print("Can make it :) Kinetic energy is {d} Joules and you only need {d} Joules\n", .{ kineticEnergy1.number, potentialEnergyNeeded1.number });
     }
 
     //calculating using specific functions:
@@ -82,9 +82,9 @@ pub fn main() void {
     const kineticEnergy2 = kineticEnergySpecific(mass.convertToBase(), speed.convertToBase());
     const potentialEnergyNeeded2 = gravitationalPotentialEnergySpecific(mass.convertToBase(), height.convertToBase());
     if (kineticEnergy2.less(potentialEnergyNeeded2)) {
-        std.debug.print("Can't make it :(. Kinetic energy is {d} Joules but you need {d} Joules", .{ kineticEnergy2.number, potentialEnergyNeeded2.number });
+        std.debug.print("Can't make it :(. Kinetic energy is {d} Joules but you need {d} Joules\n", .{ kineticEnergy2.number, potentialEnergyNeeded2.number });
     } else {
-        std.debug.print("Can make it :) Kinetic energy is {d} Joules and you only need {d} Joules", .{ kineticEnergy2.number, potentialEnergyNeeded2.number });
+        std.debug.print("Can make it :) Kinetic energy is {d} Joules and you only need {d} Joules\n", .{ kineticEnergy2.number, potentialEnergyNeeded2.number });
     }
 
     //_ = kineticEnergyGeneric(height, speed); //uncomment this line to see a nice custom error message
