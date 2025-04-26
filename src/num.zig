@@ -1,7 +1,6 @@
 const std = @import("std");
 
 //uses the exponentiation by squaring algorithm
-//by chatgpt :/
 pub fn powFloatInt(
     x: anytype, // Base
     comptime n: comptime_int, // Exponent
@@ -12,13 +11,13 @@ pub fn powFloatInt(
     var base: T = x;
     var result: T = 1;
 
-    // Handle negative exponents by inverting the base
+    // handle negative exponents by inverting the base
     if (m < 0) {
         base = 1 / base;
         m = -m;
     }
 
-    // Main loop: exponentiation by squaring
+    // main loop: exponentiation by squaring
     while (m != 0) : (m >>= 1) {
         if ((m & 1) != 0) {
             result *= base;
