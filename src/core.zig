@@ -1,3 +1,6 @@
+//the heart of the package
+//defines how Unit Systems, Quantities, and Units work
+
 const std = @import("std");
 
 const SystemID: type = struct {};

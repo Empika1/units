@@ -1,3 +1,5 @@
+// defines some number systems that can be used to make Unit Systems
+
 const std = @import("std");
 
 //uses the exponentiation by squaring algorithm

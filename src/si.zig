@@ -1,3 +1,5 @@
+//defines SI Units
+
 const std = @import("std");
 const core = @import("core.zig");
 const num = @import("num.zig");

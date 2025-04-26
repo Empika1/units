@@ -1,4 +1,4 @@
-//this file shows off the various custom errors in the unit system
+//this file shows off some of the custom errors in the unit system
 
 const std = @import("std");
 const units = @import("units");
