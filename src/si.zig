@@ -2,21 +2,12 @@
 
 const std = @import("std");
 const core = @import("core.zig");
-const num = @import("num.zig");
 
-pub fn MakeSiUnitSystem(
-    comptime Num: type,
-    comptime numAdd: fn (Num, Num) Num,
-    comptime numSubtract: fn (Num, Num) Num,
-    comptime numMultiply: fn (Num, Num) Num,
-    comptime numDivide: fn (Num, Num) Num,
-    comptime numPow: fn (Num, comptime_int) Num,
-    comptime numOrder: fn (Num, Num) std.math.Order,
-) type {
+pub fn MakeSiUnitSystem(comptime Num: type) type {
     return struct {
         /// The SI Unit System itself.
         /// Doesn't come with any defined Quantities or Units initially.
-        pub const UnitSystem: type = core.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow, numOrder);
+        pub const UnitSystem: type = core.MakeUnitSystem(Num);
 
         /// The 7 SI Base Quantities and their associated Base units.
         /// Sourced from https://en.wikipedia.org/wiki/SI_base_unit.
@@ -215,8 +206,8 @@ pub fn MakeSiUnitSystem(
     };
 }
 
-pub const f16System = MakeSiUnitSystem(f16, num.f16System.add, num.f16System.subtract, num.f16System.multiply, num.f16System.divide, num.f16System.pow, num.f16System.order);
-pub const f32System = MakeSiUnitSystem(f32, num.f32System.add, num.f32System.subtract, num.f32System.multiply, num.f32System.divide, num.f32System.pow, num.f32System.order);
-pub const f64System = MakeSiUnitSystem(f64, num.f64System.add, num.f64System.subtract, num.f64System.multiply, num.f64System.divide, num.f64System.pow, num.f64System.order);
-pub const f128System = MakeSiUnitSystem(f128, num.f128System.add, num.f128System.subtract, num.f128System.multiply, num.f128System.divide, num.f128System.pow, num.f128System.order);
-pub const comptime_floatSystem = MakeSiUnitSystem(comptime_float, num.comptime_floatSystem.add, num.comptime_floatSystem.subtract, num.comptime_floatSystem.multiply, num.comptime_floatSystem.divide, num.comptime_floatSystem.pow, num.comptime_floatSystem.order);
+pub const f16System = MakeSiUnitSystem(f16);
+pub const f32System = MakeSiUnitSystem(f32);
+pub const f64System = MakeSiUnitSystem(f64);
+pub const f128System = MakeSiUnitSystem(f128);
+pub const comptime_floatSystem = MakeSiUnitSystem(comptime_float);

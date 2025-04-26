@@ -2,6 +2,7 @@
 //defines how Unit Systems, Quantities, and Units work
 
 const std = @import("std");
+const pow = @import("pow.zig").powFloatInt;
 
 const SystemID: type = struct {};
 const QuantityID: type = struct {};
@@ -131,20 +132,12 @@ pub const TypeIntPair = struct {
     v: comptime_int,
 };
 
-/// Makes a Unit System from a base number type and arithmetic functions which act on the number type.
+/// Makes a Unit System from a base float type.
 /// All Quantities and Units belong to a Unit System, and Quantities/Units from different Unit Systems cannot be used together.
 /// Quantities are things like length, time, and energy: all things which can be measured.
 /// Quantities are represented as types which satisfy certain constraints.
 /// Units are things like meters, seconds, joules: all things which measure quantities. Units are also represented as types which satisfy certain other constraints.
-pub fn MakeUnitSystem(
-    comptime Num: type,
-    comptime numAdd: fn (Num, Num) Num,
-    comptime numSubtract: fn (Num, Num) Num,
-    comptime numMultiply: fn (Num, Num) Num,
-    comptime numDivide: fn (Num, Num) Num,
-    comptime numPow: fn (Num, comptime_int) Num,
-    comptime numOrder: fn (Num, Num) std.math.Order,
-) type {
+pub fn MakeUnitSystem(comptime Float_: type) type {
     @setEvalBranchQuota(1000000);
     return struct {
         const System_ = struct {
@@ -152,7 +145,7 @@ pub fn MakeUnitSystem(
             /// Don't manually add this to a struct.
             pub const ID = SystemID;
             /// The number type this system uses.
-            pub const NumType = Num;
+            pub const Float = Float_;
             /// A Dimensionless (aka unitless) Quantity.
             pub const Dimensionless: type = MakeBaseQuantity("One");
             /// The Unit which measures a Dimensionless Quantity. Not literally the number 1.
@@ -291,23 +284,23 @@ pub fn MakeUnitSystem(
             /// The Unit with scale = 1 and shift = 0 is the "Base Unit".
             /// All other Units (derived Units) of the same Quantity are converted to the Base Unit before math is done on them.
             /// baseUnit.number * derivedUnit.scale + derivedUnit.shift = derivedUnit.number.
-            fn MakeUnit(comptime scale_: Num, comptime shift_: Num, comptime Quantity_: type) type {
+            fn MakeUnit(comptime scale_: Float_, comptime shift_: Float_, comptime Quantity_: type) type {
                 return struct {
                     /// A tag which marks this generated type as a Unit.
                     /// Don't manually add this to a struct.
                     pub const ID = UnitID;
                     /// baseUnit.number * derivedUnit.scale + derivedUnit.shift = derivedUnit.number.
                     /// If scale = 1 and shift = 1, this Unit is a Base Unit.
-                    pub const scale: Num = scale_;
+                    pub const scale: Float_ = scale_;
                     /// baseUnit.number * derivedUnit.scale + derivedUnit.shift = derivedUnit.number.
                     /// If scale = 1 and shift = 1, this Unit is a Base Unit.
-                    pub const shift: Num = shift_;
+                    pub const shift: Float_ = shift_;
                     /// The Quantity this Unit measures.
                     pub const Quantity: type = Quantity_;
                     /// The Unit System this Unit is a part of.
                     pub const System: type = System_;
                     /// The number this Unit stores.
-                    number: Num,
+                    number: Float_,
 
                     /// Reaturns the Base Unit of this Unit's Quantity.
                     pub fn GetBaseUnit() type {
@@ -318,7 +311,7 @@ pub fn MakeUnitSystem(
                     /// The Derived Unit measures the same Quantity.
                     /// For example, you could write "Centimeter = Meter.Derive(100, 0)".
                     /// Or "Fahrenheit = Celcius.Derive(1.8, 32)".
-                    pub fn Derive(comptime scale__: Num, comptime shift__: Num) type {
+                    pub fn Derive(comptime scale__: Float_, comptime shift__: Float_) type {
                         comptime if (scale__ == 0) @compileError("Cannot derive a Unit with a scale__ of 0");
                         return DeriveUnit(@This(), scale__, shift__);
                     }
@@ -483,48 +476,48 @@ pub fn MakeUnitSystem(
                 };
             }
 
-            fn DeriveUnit(comptime StartingUnit: type, comptime scale_: Num, comptime shift_: Num) type {
-                return MakeUnit(numMultiply(StartingUnit.scale, scale_), numAdd(numMultiply(StartingUnit.shift, scale_), shift_), StartingUnit.Quantity);
+            fn DeriveUnit(comptime StartingUnit: type, comptime scale_: Float_, comptime shift_: Float_) type {
+                return MakeUnit(StartingUnit.scale * scale_, StartingUnit.shift * scale_ + shift_, StartingUnit.Quantity);
             }
 
             fn UnitMultiply(comptime A: type, comptime B: type) type {
-                return QuantityMultiply(A.Quantity, B.Quantity).BaseUnit.Derive(numMultiply(A.scale, B.scale), 0);
+                return QuantityMultiply(A.Quantity, B.Quantity).BaseUnit.Derive(A.scale * B.scale, 0);
             }
 
             fn UnitDivide(comptime A: type, comptime B: type) type {
-                return QuantityDivide(A.Quantity, B.Quantity).BaseUnit.Derive(numDivide(A.scale, B.scale), 0);
+                return QuantityDivide(A.Quantity, B.Quantity).BaseUnit.Derive(A.scale / B.scale, 0);
             }
 
             fn UnitPow(comptime A: type, comptime exp: comptime_int) type {
-                return QuantityPow(A.Quantity, exp).BaseUnit.Derive(numPow(A.scale, exp), 0);
+                return QuantityPow(A.Quantity, exp).BaseUnit.Derive(pow(A.scale, exp), 0);
             }
 
             fn unitConvert(from: anytype, comptime To: type) To {
-                return .{ .number = numDivide(numSubtract(from.number, @TypeOf(from).shift), numAdd(numMultiply(@TypeOf(from).scale, To.scale), To.shift)) };
+                return .{ .number = ((from.number - @TypeOf(from).shift) / (@TypeOf(from).scale * To.scale + To.shift)) };
             }
 
             fn unitAdd(a: anytype, b: anytype) @TypeOf(a).GetBaseUnit() {
-                return .{ .number = numAdd(a.convertToBase().number, b.convertToBase().number) };
+                return .{ .number = a.convertToBase().number + b.convertToBase().number };
             }
 
             fn unitSubtract(a: anytype, b: anytype) @TypeOf(a).GetBaseUnit() {
-                return .{ .number = numSubtract(a.convertToBase().number, b.convertToBase().number) };
+                return .{ .number = a.convertToBase().number - b.convertToBase().number };
             }
 
             fn unitMultiply(a: anytype, b: anytype) QuantityMultiply(@TypeOf(a).Quantity, @TypeOf(b).Quantity).BaseUnit {
-                return .{ .number = numMultiply(a.convertToBase().number, b.convertToBase().number) };
+                return .{ .number = a.convertToBase().number * b.convertToBase().number };
             }
 
             fn unitDivide(a: anytype, b: anytype) QuantityDivide(@TypeOf(a).Quantity, @TypeOf(b).Quantity).BaseUnit {
-                return .{ .number = numDivide(a.convertToBase().number, b.convertToBase().number) };
+                return .{ .number = a.convertToBase().number / b.convertToBase().number };
             }
 
             fn unitPow(a: anytype, comptime exp: comptime_int) QuantityPow(@TypeOf(a).Quantity, exp).BaseUnit {
-                return .{ .number = numPow(a.convertToBase().number, exp) };
+                return .{ .number = pow(a.convertToBase().number, exp) };
             }
 
             fn unitOrder(a: anytype, b: anytype) std.math.Order {
-                return numOrder(a.convertToBase().number, b.convertToBase().number);
+                return std.math.order(a.convertToBase().number, b.convertToBase().number);
             }
 
             fn unitLess(a: anytype, b: anytype) bool {
