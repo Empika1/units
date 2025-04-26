@@ -1,11 +1,40 @@
 const std = @import("std");
 
+//uses the exponentiation by squaring algorithm
+//by chatgpt :/
+pub fn powFloatInt(
+    x: anytype, // Base
+    comptime n: comptime_int, // Exponent
+) @TypeOf(x) {
+    const T = @TypeOf(x);
+
+    var m: isize = n;
+    var base: T = x;
+    var result: T = 1;
+
+    // Handle negative exponents by inverting the base
+    if (m < 0) {
+        base = 1 / base;
+        m = -m;
+    }
+
+    // Main loop: exponentiation by squaring
+    while (m != 0) : (m >>= 1) {
+        if ((m & 1) != 0) {
+            result *= base;
+        }
+        base *= base;
+    }
+
+    return result;
+}
+
 /// Makes a number system from a floating point type.
-/// Currently only works with f32 and f64 because std.math.pow only works with those two.
 pub fn MakeNumSystem(NumType: type) type {
-    //very useful function, i know...
-    if (NumType != f32 and NumType != f64) {
-        @compileError("Unsupported");
+    switch (@typeInfo(NumType)) {
+        .float => {},
+        .comptime_float => {},
+        else => @compileError(@typeName(NumType) ++ "is not a float type."),
     }
 
     return struct {
@@ -26,12 +55,17 @@ pub fn MakeNumSystem(NumType: type) type {
         }
 
         pub fn pow(a: NumType, b: comptime_int) NumType {
-            return std.math.pow(NumType, a, @floatFromInt(b));
+            return powFloatInt(a, b);
+        }
+
+        pub fn order(a: NumType, b: NumType) std.math.Order {
+            return std.math.order(a, b);
         }
     };
 }
 
-/// A number system made from f32.
+pub const f16System = MakeNumSystem(f16);
 pub const f32System = MakeNumSystem(f32);
-/// A number system made from f64.
 pub const f64System = MakeNumSystem(f64);
+pub const f128System = MakeNumSystem(f128);
+pub const comptime_floatSystem = MakeNumSystem(comptime_float);
