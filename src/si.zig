@@ -1,18 +1,20 @@
+const std = @import("std");
 const core = @import("core.zig");
 const num = @import("num.zig");
 
 pub fn MakeSiUnitSystem(
-    Num: type,
-    numAdd: fn (Num, Num) Num,
-    numSubtract: fn (Num, Num) Num,
-    numMultiply: fn (Num, Num) Num,
-    numDivide: fn (Num, Num) Num,
-    numPow: fn (Num, comptime_int) Num,
+    comptime Num: type,
+    comptime numAdd: fn (Num, Num) Num,
+    comptime numSubtract: fn (Num, Num) Num,
+    comptime numMultiply: fn (Num, Num) Num,
+    comptime numDivide: fn (Num, Num) Num,
+    comptime numPow: fn (Num, comptime_int) Num,
+    comptime numOrder: fn (Num, Num) std.math.Order,
 ) type {
-    const S = struct {
+    return struct {
         /// The SI Unit System itself.
         /// Doesn't come with any defined Quantities or Units initially.
-        pub const UnitSystem: type = core.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow);
+        pub const UnitSystem: type = core.MakeUnitSystem(Num, numAdd, numSubtract, numMultiply, numDivide, numPow, numOrder);
 
         /// The 7 SI Base Quantities and their associated Base units.
         /// Sourced from https://en.wikipedia.org/wiki/SI_base_unit.
@@ -91,8 +93,9 @@ pub fn MakeSiUnitSystem(
             pub const Inductance: type = MagneticFlux.Divide(baseUnits.ElectricCurrent);
             pub const Henry: type = Inductance.BaseUnit;
 
-            /// Temperature already exists as a Base Quantity, so no new Quantity is needed.
-            pub const DegreeCelsius: type = baseUnits.Kelvin.Derive(1, -273.15);
+            //pub const DegreeCelsius: type = baseUnits.Kelvin.Derive(1, -273.15); temperature is not defined because "1" and "-273.15" are only sensible numbers for floating point
+            //so if you use a different number type, like in examples/customNums, this doesn't compile
+            //define it yourself :(
 
             pub const LuminousFlux: type = baseUnits.LuminousIntensity.Multiply(SolidAngle);
             pub const Lumen: type = LuminousFlux.BaseUnit;
@@ -208,16 +211,10 @@ pub fn MakeSiUnitSystem(
             pub const TemperatureGradient: type = baseUnits.Temperature.Divide(baseUnits.Distance);
         };
     };
-
-    // @setEvalBranchQuota(1000000);
-    // units.nameQuantitiesAndUnits(S.baseUnits);
-    // units.nameQuantitiesAndUnits(S.derivedUnits);
-    //S.baseUnits.Kelvin.name = "Kelvin";
-
-    return S;
 }
 
-/// The SI System with f32 as its number type.
-pub const f32System = MakeSiUnitSystem(f32, num.f32System.add, num.f32System.subtract, num.f32System.multiply, num.f32System.divide, num.f32System.pow);
-/// The SI System with f64 as its number type.
-pub const f64System = MakeSiUnitSystem(f64, num.f64System.add, num.f64System.subtract, num.f64System.multiply, num.f64System.divide, num.f64System.pow);
+pub const f16System = MakeSiUnitSystem(f16, num.f16System.add, num.f16System.subtract, num.f16System.multiply, num.f16System.divide, num.f16System.pow, num.f16System.order);
+pub const f32System = MakeSiUnitSystem(f32, num.f32System.add, num.f32System.subtract, num.f32System.multiply, num.f32System.divide, num.f32System.pow, num.f32System.order);
+pub const f64System = MakeSiUnitSystem(f64, num.f64System.add, num.f64System.subtract, num.f64System.multiply, num.f64System.divide, num.f64System.pow, num.f64System.order);
+pub const f128System = MakeSiUnitSystem(f128, num.f128System.add, num.f128System.subtract, num.f128System.multiply, num.f128System.divide, num.f128System.pow, num.f128System.order);
+pub const comptime_floatSystem = MakeSiUnitSystem(comptime_float, num.comptime_floatSystem.add, num.comptime_floatSystem.subtract, num.comptime_floatSystem.multiply, num.comptime_floatSystem.divide, num.comptime_floatSystem.pow, num.comptime_floatSystem.order);
