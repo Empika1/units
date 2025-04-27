@@ -368,9 +368,16 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
                         return unitConvert(self, Quantity.BaseUnit);
                     }
 
+                    /// Negates this value.
+                    /// May produce unintuitive results with units that have a shift.
+                    pub fn negate(self: @This()) GetBaseUnit() {
+                        return unitNegate(self);
+                    }
+
                     /// Adds another value to this.
                     /// Values must measure the same Quantity (but can be different Units).
                     /// For example: "myTotalDistance = myFirstDistance.add(mySecondDistance)".
+                    /// May produce unintuitive results with units that have a shift.
                     pub fn add(self: @This(), other: anytype) t: {
                         assertUnit(@TypeOf(other), "@TypeOf(other)");
                         assertSameQuantity(@This(), @TypeOf(other), "@This()", "@TypeOf(other)");
@@ -382,6 +389,7 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
                     /// Subtracts another value from this.
                     /// Values must measure the same Quantity (but can be different Units).
                     /// For example: "myDeltaT = myStartingTemperature.subtract(myEndingTemperature)".
+                    /// May produce unintuitive results with units that have a shift.
                     pub fn subtract(self: @This(), other: anytype) t: {
                         assertUnit(@TypeOf(other), "@TypeOf(other)");
                         assertSameQuantity(@This(), @TypeOf(other), "@This()", "@TypeOf(other)");
@@ -393,6 +401,7 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
                     /// Multiplies another value by this.
                     /// Values need not measure the same Quantity.
                     /// For example: "myWork = myForce.multiply(myDistance)".
+                    /// May produce unintuitive results with units that have a shift.
                     pub fn multiply(self: @This(), other: anytype) t: {
                         assertUnit(@TypeOf(other), "@TypeOf(other)");
                         assertRightSystem(@TypeOf(other), System, "@TypeOf(other)");
@@ -406,6 +415,7 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
                     /// Divides another value by this.
                     /// Values need not measure the same Quantity.
                     /// For example: "myVelocity = myDistance.divide(myTime)".
+                    /// May produce unintuitive results with units that have a shift.
                     pub fn divide(self: @This(), other: anytype) t: {
                         assertUnit(@TypeOf(other), "@TypeOf(other)");
                         assertRightSystem(@TypeOf(other), System, "@TypeOf(other)");
@@ -416,8 +426,15 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
 
                     /// Exponentiates this value.
                     /// For example: "myCubesArea: CubicMeter = myCubeLength.pow(3)".
+                    /// May produce unintuitive results with units that have a shift.
                     pub fn pow(self: @This(), comptime exp: comptime_int) @TypeOf(self).Quantity.Pow(exp).BaseUnit {
                         return unitPow(self, exp);
+                    }
+
+                    /// Produces the absolute value of this unit.
+                    /// May produce unintuitive results with units that have a shift.
+                    pub fn abs(self: @This()) GetBaseUnit() {
+                        return unitAbs(self);
                     }
 
                     /// Orders self and other.
@@ -496,6 +513,10 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
                 return .{ .number = ((from.number - @TypeOf(from).shift) / (@TypeOf(from).scale * To.scale + To.shift)) };
             }
 
+            fn unitNegate(a: anytype) @TypeOf(a).GetBaseUnit() {
+                return .{ .number = -a.convertToBase().number };
+            }
+
             fn unitAdd(a: anytype, b: anytype) @TypeOf(a).GetBaseUnit() {
                 return .{ .number = a.convertToBase().number + b.convertToBase().number };
             }
@@ -514,6 +535,10 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
 
             fn unitPow(a: anytype, comptime exp: comptime_int) QuantityPow(@TypeOf(a).Quantity, exp).BaseUnit {
                 return .{ .number = pow(a.convertToBase().number, exp) };
+            }
+
+            fn unitAbs(a: anytype) @TypeOf(a).GetBaseUnit() {
+                return .{ .number = @abs(a.convertToBase().number) };
             }
 
             fn unitOrder(a: anytype, b: anytype) std.math.Order {
