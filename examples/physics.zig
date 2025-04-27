@@ -6,7 +6,7 @@ const units = @import("units");
 const core = units.core;
 const si = units.si;
 
-const system = si.f64System.UnitSystem;
+const System = si.f64System.UnitSystem;
 const base = si.f64System.baseUnits;
 const derived = si.f64System.derivedUnits;
 
@@ -17,30 +17,30 @@ fn kineticEnergyGeneric(mass: anytype, velocity: anytype) t: {
     //type checking error is in the return type so the nice custom error always prints before any error related to the return type
     //technically this isn't necessary, but passing in invalid types could result in nonsense that's best to avoid
     core.assertUnit(@TypeOf(mass), "@TypeOf(mass)");
-    core.assertRightSystem(@TypeOf(mass), system, "@TypeOf(mass)");
+    core.assertRightSystem(@TypeOf(mass), System, "@TypeOf(mass)");
     core.assertRightQuantity(@TypeOf(mass), base.Mass, "@TypeOf(mass)", "base.Mass");
     core.assertUnit(@TypeOf(velocity), "TypeOf(velocity)");
-    core.assertRightSystem(@TypeOf(velocity), system, "TypeOf(velocity)");
+    core.assertRightSystem(@TypeOf(velocity), System, "TypeOf(velocity)");
     core.assertRightQuantity(@TypeOf(velocity), derived.Velocity, "TypeOf(velocity)", "derived.Velocity");
     break :t derived.Joule;
 } {
     //hilariously small function body
-    return (system.One{ .number = 0.5 }).multiply(mass).multiply(velocity.pow(2)); //One and Dimensionless are the Unit and Quantity respectively for dimensionless numbers (like 0.5)
+    return (System.One{ .number = 0.5 }).multiply(mass).multiply(velocity.pow(2)); //One and Dimensionless are the Unit and Quantity respectively for dimensionless numbers (like 0.5)
 }
 
 //alternatively, to avoid all the manual type checking, you can define a function that takes in specific types
 //does the same thing
 fn kineticEnergySpecific(mass: base.Kilogram, velocity: derived.Velocity.BaseUnit) derived.Joule {
-    return (system.One{ .number = 0.5 }).multiply(mass).multiply(velocity.pow(2));
+    return (System.One{ .number = 0.5 }).multiply(mass).multiply(velocity.pow(2));
 }
 
 //a similar function but it calculates potential energy
 fn gravitationalPotentialEnergyGeneric(mass: anytype, height: anytype) t: {
     core.assertUnit(@TypeOf(mass), "@TypeOf(mass)");
-    core.assertRightSystem(@TypeOf(mass), system, "@TypeOf(mass)");
+    core.assertRightSystem(@TypeOf(mass), System, "@TypeOf(mass)");
     core.assertRightQuantity(@TypeOf(mass), base.Mass, "@TypeOf(mass)", "base.Mass");
     core.assertUnit(@TypeOf(height), "TypeOf(height)");
-    core.assertRightSystem(@TypeOf(height), system, "TypeOf(height)");
+    core.assertRightSystem(@TypeOf(height), System, "TypeOf(height)");
     core.assertRightQuantity(@TypeOf(height), base.Distance, "TypeOf(height)", "base.Distance");
     break :t derived.Joule;
 } {

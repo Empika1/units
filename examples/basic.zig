@@ -5,7 +5,7 @@ const units = @import("units");
 
 const si = units.si; //file defining the SI unit system and related things
 
-const system = si.f64System.UnitSystem; //the actual unit system
+const System = si.f64System.UnitSystem; //the actual unit system
 const base = si.f64System.baseUnits; //the SI base units
 const derived = si.f64System.derivedUnits; //the SI derived units (not used here)
 
