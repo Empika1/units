@@ -510,7 +510,7 @@ pub fn MakeUnitSystem(comptime Float_: type) type {
             }
 
             fn unitConvert(from: anytype, comptime To: type) To {
-                return .{ .number = ((from.number - @TypeOf(from).shift) / (@TypeOf(from).scale * To.scale + To.shift)) };
+                return .{ .number = ((from.number - @TypeOf(from).shift) / @TypeOf(from).scale * To.scale + To.shift) };
             }
 
             fn unitNegate(a: anytype) @TypeOf(a).GetBaseUnit() {
