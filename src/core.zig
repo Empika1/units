@@ -1,5 +1,5 @@
-//the heart of the package
-//defines how Unit Systems, Quantities, and Units work
+//! The heart of the package.
+//! Defines how Unit Systems, Quantities, and Units work.
 
 const std = @import("std");
 const pow = @import("pow.zig").powFloatInt;
