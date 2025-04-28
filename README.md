@@ -1,7 +1,7 @@
 # units-zig
 This is a library for working with Quantities (things which can be measured, like distance, mass, and time) and Units (things which measure Quantities, like meters, kilograms, and seconds). 
 All Unit analysis is done at comptime, so Unit conversions are handled automatically and Quantity mismatches are caught as compile errors. 
-This library is very performant, because Unit logic is exclusively comptime so operations on Units can be optimized to regular float operations at runtime.
+This library is very performant: Unit logic is comptime so operations on Units can be optimized to regular float operations at runtime.
 
 ## Showcase
 You can make your own Unit System:
@@ -61,6 +61,18 @@ Various custom comptime errors exist for invalid Unit/Quantity operations:
 
     _ = (f32system.baseUnits.Meter{ .number = 1 }).add(f32system.baseUnits.Kilogram{ .number = 1 }); //Meter and Kilogram have different Quantities.
 ```
+
+## Installation
+Run this: `zig fetch --save git+https://github.com/Empika1/units-zig.git`  
+Add this to your build.zig:
+```zig
+    const units = b.dependency("units", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("units", units.module("units"));
+```
+Now you should be able to `@import("units")` in your project.
 
 ## Future
 - Allow Quantities with rational, non-integer powers
