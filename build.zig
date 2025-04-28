@@ -18,17 +18,16 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     //one executable for each example file in examples/
-    var dir = try std.fs.cwd().openDir("examples", .{ .iterate = true });
-    var it = dir.iterate();
-    while (try it.next()) |file| {
-        if (file.kind != .file) {
-            continue;
-        }
-        const fileNameStem = std.fs.path.stem(file.name);
-        const sourceName = try std.fs.path.join(b.allocator, &.{ "examples", file.name });
-        defer b.allocator.free(sourceName);
+    const examples = .{
+        "examples/basic.zig",
+        "examples/errors.zig",
+        "examples/physics.zig",
+        "examples/readmeCode.zig",
+    };
+    inline for (examples) |example| {
+        const fileNameStem = comptime std.fs.path.stem(example);
         const exampleMod = b.createModule(.{
-            .root_source_file = b.path(sourceName),
+            .root_source_file = b.path(example),
             .target = target,
             .optimize = optimize,
         });
@@ -44,10 +43,8 @@ pub fn build(b: *std.Build) !void {
         if (b.args) |args| {
             exampleRunCmd.addArgs(args);
         }
-        const exampleRunName = try std.fmt.allocPrint(b.allocator, "run-{s}", .{fileNameStem});
-        defer b.allocator.free(exampleRunName);
-        const exampleDescName = try std.fmt.allocPrint(b.allocator, "run the example {s}", .{fileNameStem});
-        defer b.allocator.free(exampleDescName);
+        const exampleRunName = std.fmt.comptimePrint("run-{s}", .{fileNameStem});
+        const exampleDescName = std.fmt.comptimePrint("run the example {s}", .{fileNameStem});
         const exampleRunStep = b.step(exampleRunName, exampleDescName);
         exampleRunStep.dependOn(&exampleRunCmd.step);
     }
