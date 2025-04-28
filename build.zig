@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     //library
-    const libMod = b.createModule(.{
+    const libMod = b.addModule("units", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
