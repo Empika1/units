@@ -1,7 +1,7 @@
 # units-zig
 This is a library for working with Quantities (things which can be measured, like distance, mass, and time) and Units (things which measure Quantities, like meters, kilograms, and seconds). 
 All Unit analysis is done at comptime, so Unit conversions are handled automatically and Quantity mismatches are caught as compile errors. 
-This library is very performant, because Unit logic is exclusively comptime so operations on Units can be optimized to regular float operations at runtime.
+This library is very performant: Unit logic is comptime so operations on Units can be optimized to regular float operations at runtime.
 
 ## Showcase
 You can make your own Unit System:
