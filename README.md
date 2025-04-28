@@ -62,6 +62,18 @@ Various custom comptime errors exist for invalid Unit/Quantity operations:
     _ = (f32system.baseUnits.Meter{ .number = 1 }).add(f32system.baseUnits.Kilogram{ .number = 1 }); //Meter and Kilogram have different Quantities.
 ```
 
+## Installation
+Run this: `zig fetch --save git+https://github.com/Empika1/units-zig.git`  
+Add this to your build.zig:
+```zig
+    const units = b.dependency("units", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("units", units.module("units"));
+```
+Now you should be able to `@import("units")` in your project.
+
 ## Future
 - Allow Quantities with rational, non-integer powers
 - Make units with vector numerical types possible (math vectors, not Zig vectors) (unlikely, would be very hard)
